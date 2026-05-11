@@ -28,6 +28,9 @@ include = ["app*"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
+filterwarnings = [
+    "ignore::langchain_core._api.deprecation.LangChainPendingDeprecationWarning",
+]
 
 [tool.ruff]
 line-length = 100

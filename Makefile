@@ -1,4 +1,4 @@
-.PHONY: install dev test lint
+.PHONY: install dev demo test lint
 
 PYTHON ?= python3
 
@@ -7,6 +7,9 @@ install:
 
 dev:
 	uvicorn app.main:app --reload
+
+demo:
+	$(PYTHON) scripts/demo_request.py
 
 test:
 	pytest

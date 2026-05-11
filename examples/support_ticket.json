@@ -1,0 +1,6 @@
+{
+  "customer_id": "cust_enterprise_042",
+  "subject": "Suspicious login and blocked checkout API",
+  "description": "A finance admin reported a suspicious login alert and possible account compromise. The checkout API is returning errors for multiple customers and blocking payments in production.",
+  "channel": "chat"
+}

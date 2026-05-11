@@ -69,6 +69,8 @@ app/
   services/     LLM provider, knowledge base, tracing, and ticket store
   api.py        FastAPI routes
   main.py       FastAPI application entrypoint
+examples/       Sample support ticket payloads and demo output
+scripts/        Local demo and smoke-check utilities
 tests/          API and graph tests
 ```
 
@@ -83,6 +85,24 @@ make dev
 ```
 
 Open the API docs at [http://localhost:8000/docs](http://localhost:8000/docs).
+
+## One-Command Demo
+
+Run a complete ticket triage flow without starting a server:
+
+```bash
+make demo
+```
+
+The demo loads `examples/support_ticket.json`, creates a ticket through the FastAPI app, runs the
+LangGraph triage workflow, and prints a compact JSON summary. A shortened example output is stored
+in `examples/demo_output.json`.
+
+To run the same demo against a live API:
+
+```bash
+python3 scripts/demo_request.py --base-url http://localhost:8000
+```
 
 ## Example Request
 

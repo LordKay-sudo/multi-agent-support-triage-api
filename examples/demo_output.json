@@ -1,0 +1,24 @@
+{
+  "status": "triaged",
+  "category": "security",
+  "priority": "critical",
+  "confidence": 0.86,
+  "escalate": true,
+  "workflow_path": [
+    "classifier",
+    "supervisor",
+    "risk_review",
+    "retrieval",
+    "planner",
+    "drafting",
+    "escalation"
+  ],
+  "recommended_actions": [
+    "Route to a senior support owner for same-day review.",
+    "Preserve audit context and customer communications.",
+    "Open a security incident candidate and check account access logs.",
+    "Lock down suspicious sessions if compromise is plausible.",
+    "Escalate confirmed compromise to the security queue.",
+    "Respond using the critical priority support SLA."
+  ]
+}

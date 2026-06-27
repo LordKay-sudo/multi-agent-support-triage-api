@@ -18,7 +18,8 @@ def get_triage_graph() -> SupportTriageGraph:
     settings = get_settings()
     return SupportTriageGraph(
         knowledge_base=SupportKnowledgeBase(),
-        chat_model=build_chat_model(settings),
+        triage_model=build_chat_model(settings),
+        tracer=get_tracer(),
     )
 
 

@@ -40,6 +40,24 @@ class TicketStore:
                 update={
                     "status": TicketStatus.TRIAGED,
                     "report": report,
+                    "failure_reason": None,
+                    "updated_at": datetime.now(UTC),
+                }
+            )
+            self._tickets[ticket_id] = updated
+        return updated
+
+    def mark_failed(self, ticket_id: UUID, reason: str) -> Ticket:
+        with self._lock:
+            try:
+                ticket = self._tickets[ticket_id]
+            except KeyError as exc:
+                raise TicketNotFoundError(str(ticket_id)) from exc
+
+            updated = ticket.model_copy(
+                update={
+                    "status": TicketStatus.FAILED,
+                    "failure_reason": reason,
                     "updated_at": datetime.now(UTC),
                 }
             )

@@ -64,6 +64,7 @@ class Ticket(StrictBaseModel):
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     report: "TriageReport | None" = None
+    failure_reason: str | None = None
 
 
 class AgentEvent(StrictBaseModel):
@@ -99,6 +100,12 @@ class TicketResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     report: TriageReport | None
+    failure_reason: str | None = None
+
+
+class TriageErrorResponse(StrictBaseModel):
+    message: str
+    trace_id: str
 
 
 class HealthResponse(StrictBaseModel):

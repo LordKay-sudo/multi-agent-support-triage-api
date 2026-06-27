@@ -3,35 +3,39 @@ from langchain_core.prompts import ChatPromptTemplate
 from app.agents.state import TriageState
 from app.models.tickets import AgentEvent, TicketCategory, TicketPriority
 from app.services.knowledge_base import SupportKnowledgeBase
-from app.services.llm import SupportChatModel
+from app.services.llm import SupportTriageModel
 
 
 class SupportTriageAgents:
-    def __init__(self, knowledge_base: SupportKnowledgeBase, chat_model: SupportChatModel) -> None:
+    def __init__(
+        self,
+        knowledge_base: SupportKnowledgeBase,
+        triage_model: SupportTriageModel,
+    ) -> None:
         self._knowledge_base = knowledge_base
-        self._chat_model = chat_model
+        self._triage_model = triage_model
 
     def classify(self, state: TriageState) -> TriageState:
-        text = self._ticket_text(state)
-        category = self._classify_category(text)
-        priority = self._classify_priority(text, category)
-        confidence = self._classification_confidence(text, category, priority)
-        requires_risk_review = priority in {TicketPriority.HIGH, TicketPriority.CRITICAL}
+        classification = self._triage_model.classify_ticket(state["subject"], state["description"])
+        requires_risk_review = classification.priority in {
+            TicketPriority.HIGH,
+            TicketPriority.CRITICAL,
+        }
 
         return {
-            "category": category,
-            "priority": priority,
-            "confidence": confidence,
+            "category": classification.category,
+            "priority": classification.priority,
+            "confidence": classification.confidence,
             "requires_risk_review": requires_risk_review,
             "workflow_path": ["classifier"],
             "events": [
                 AgentEvent(
                     agent="classifier",
                     summary=(
-                        f"Classified ticket as {category.value} "
-                        f"with {priority.value} priority."
+                        f"Classified ticket as {classification.category.value} "
+                        f"with {classification.priority.value} priority."
                     ),
-                    metadata={"confidence": f"{confidence:.2f}"},
+                    metadata={"confidence": f"{classification.confidence:.2f}"},
                 )
             ],
         }
@@ -155,7 +159,7 @@ class SupportTriageAgents:
         )
 
         return {
-            "draft_response": self._chat_model.invoke(messages),
+            "draft_response": self._triage_model.invoke(messages),
             "workflow_path": ["drafting"],
             "events": [
                 AgentEvent(
@@ -169,68 +173,27 @@ class SupportTriageAgents:
         }
 
     def decide_escalation(self, state: TriageState) -> TriageState:
-        priority = state.get("priority", TicketPriority.MEDIUM)
         category = state.get("category", TicketCategory.GENERAL)
-        escalate = priority in {TicketPriority.HIGH, TicketPriority.CRITICAL}
-        rationale = (
-            f"Escalation is {'required' if escalate else 'not required'} because the ticket is "
-            f"{priority.value} priority in the {category.value} queue."
+        priority = state.get("priority", TicketPriority.MEDIUM)
+        recommended_actions = state.get("recommended_actions", [])
+        guidance = state.get("guidance", [])
+        decision = self._triage_model.decide_escalation(
+            subject=state["subject"],
+            description=state["description"],
+            category=category,
+            priority=priority,
+            recommended_actions=recommended_actions,
+            guidance=guidance,
         )
 
         return {
-            "escalate": escalate,
-            "rationale": rationale,
+            "escalate": decision.escalate,
+            "rationale": decision.rationale,
             "workflow_path": ["escalation"],
             "events": [
                 AgentEvent(
                     agent="escalation",
-                    summary=rationale,
+                    summary=decision.rationale,
                 )
             ],
         }
-
-    @staticmethod
-    def _ticket_text(state: TriageState) -> str:
-        return f"{state['subject']} {state['description']}".lower()
-
-    @staticmethod
-    def _classify_category(text: str) -> TicketCategory:
-        if any(term in text for term in ["breach", "compromise", "phishing", "suspicious"]):
-            return TicketCategory.SECURITY
-        if any(term in text for term in ["error", "bug", "down", "latency", "api", "crash"]):
-            return TicketCategory.TECHNICAL
-        if any(term in text for term in ["invoice", "payment", "refund", "charge", "billing"]):
-            return TicketCategory.BILLING
-        if any(term in text for term in ["mfa", "password", "login", "locked", "account"]):
-            return TicketCategory.ACCOUNT
-        return TicketCategory.GENERAL
-
-    @staticmethod
-    def _classify_priority(text: str, category: TicketCategory) -> TicketPriority:
-        if any(term in text for term in ["breach", "compromise", "data leak", "production down"]):
-            return TicketPriority.CRITICAL
-        if category == TicketCategory.SECURITY:
-            return TicketPriority.HIGH
-        if any(term in text for term in ["urgent", "blocked", "payroll", "angry", "cannot access"]):
-            return TicketPriority.HIGH
-        if any(term in text for term in ["question", "how do i", "request"]):
-            return TicketPriority.LOW
-        return TicketPriority.MEDIUM
-
-    @staticmethod
-    def _classification_confidence(
-        text: str,
-        category: TicketCategory,
-        priority: TicketPriority,
-    ) -> float:
-        category_terms = {
-            TicketCategory.BILLING: ["invoice", "payment", "refund", "charge", "billing"],
-            TicketCategory.TECHNICAL: ["error", "bug", "down", "latency", "api", "crash"],
-            TicketCategory.ACCOUNT: ["mfa", "password", "login", "locked", "account"],
-            TicketCategory.SECURITY: ["breach", "compromise", "phishing", "suspicious"],
-            TicketCategory.GENERAL: [],
-        }
-        category_hits = sum(term in text for term in category_terms[category])
-        priority_bonus = 0.08 if priority in {TicketPriority.HIGH, TicketPriority.CRITICAL} else 0
-        confidence = 0.62 + min(category_hits * 0.08, 0.24) + priority_bonus
-        return round(min(confidence, 0.94), 2)

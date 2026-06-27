@@ -1,0 +1,114 @@
+[
+  {
+    "name": "account_payroll_lockout",
+    "ticket": {
+      "customer_id": "cust_123",
+      "subject": "Cannot access account before payroll",
+      "description": "I am locked out after MFA setup and payroll closes today."
+    },
+    "expected": {
+      "category": "account",
+      "priority": "high",
+      "escalate": true,
+      "risk_review": true
+    }
+  },
+  {
+    "name": "general_notification_question",
+    "ticket": {
+      "customer_id": "cust_456",
+      "subject": "Question about changing notification settings",
+      "description": "How do I update email notification preferences for weekly reports?"
+    },
+    "expected": {
+      "category": "general",
+      "priority": "low",
+      "escalate": false,
+      "risk_review": false
+    }
+  },
+  {
+    "name": "security_compromise_alert",
+    "ticket": {
+      "customer_id": "cust_789",
+      "subject": "Suspicious account compromise",
+      "description": "We suspect account compromise after a phishing email and unusual login."
+    },
+    "expected": {
+      "category": "security",
+      "priority": "critical",
+      "escalate": true,
+      "risk_review": true
+    }
+  },
+  {
+    "name": "technical_api_outage",
+    "ticket": {
+      "customer_id": "cust_101",
+      "subject": "Payments API error",
+      "description": "The payments API returns an error and our checkout is blocked."
+    },
+    "expected": {
+      "category": "technical",
+      "priority": "high",
+      "escalate": true,
+      "risk_review": true
+    }
+  },
+  {
+    "name": "billing_invoice_question",
+    "ticket": {
+      "customer_id": "cust_202",
+      "subject": "Billing charge question",
+      "description": "Question about a renewal charge on this month's invoice."
+    },
+    "expected": {
+      "category": "billing",
+      "priority": "low",
+      "escalate": false,
+      "risk_review": false
+    }
+  },
+  {
+    "name": "demo_security_production",
+    "ticket": {
+      "customer_id": "cust_enterprise_042",
+      "subject": "Suspicious login and blocked checkout API",
+      "description": "A finance admin reported a suspicious login alert and possible account compromise. The checkout API is returning errors for multiple customers and blocking payments in production."
+    },
+    "expected": {
+      "category": "security",
+      "priority": "critical",
+      "escalate": true,
+      "risk_review": true
+    }
+  },
+  {
+    "name": "account_password_reset",
+    "ticket": {
+      "customer_id": "cust_303",
+      "subject": "Password reset help",
+      "description": "I forgot my password and need help resetting access to my account."
+    },
+    "expected": {
+      "category": "account",
+      "priority": "medium",
+      "escalate": false,
+      "risk_review": false
+    }
+  },
+  {
+    "name": "technical_latency_issue",
+    "ticket": {
+      "customer_id": "cust_404",
+      "subject": "Dashboard latency",
+      "description": "Our dashboard has high latency after the latest release but users can still work."
+    },
+    "expected": {
+      "category": "technical",
+      "priority": "medium",
+      "escalate": false,
+      "risk_review": false
+    }
+  }
+]

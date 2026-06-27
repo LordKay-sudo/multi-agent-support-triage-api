@@ -1,14 +1,21 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 
 from app.agents.graph import SupportTriageGraph
 from app.core.config import Settings, get_settings
 from app.dependencies import get_store, get_tracer, get_triage_graph
-from app.models.tickets import HealthResponse, TicketCreate, TicketResponse, TicketStatus
+from app.models.tickets import (
+    HealthResponse,
+    TicketCreate,
+    TicketResponse,
+    TicketStatus,
+    TriageErrorResponse,
+)
 from app.services.store import TicketNotFoundError, TicketStore
 from app.services.tracing import TriageTracer
+from app.services.triage_errors import TriageError
 
 health_router = APIRouter(tags=["health"])
 tickets_router = APIRouter(prefix="/tickets", tags=["tickets"])
@@ -57,9 +64,14 @@ def get_ticket(
         ) from exc
 
 
-@tickets_router.post("/{ticket_id}/triage", response_model=TicketResponse)
+@tickets_router.post(
+    "/{ticket_id}/triage",
+    response_model=TicketResponse,
+    responses={502: {"model": TriageErrorResponse}},
+)
 def run_triage(
     ticket_id: UUID,
+    request: Request,
     store: StoreDep,
     graph: GraphDep,
     tracer: TracerDep,
@@ -76,7 +88,17 @@ def run_triage(
     if ticket.status == TicketStatus.TRIAGED and ticket.report is not None and not force:
         return TicketResponse.model_validate(ticket)
 
-    report = graph.run(ticket, trace_id=tracer.new_trace_id())
+    request_id = getattr(request.state, "request_id", request.headers.get("x-request-id"))
+    trace_id = tracer.new_trace_id(request_id)
+
+    try:
+        report = graph.run(ticket, trace_id=trace_id, request_id=request_id)
+    except TriageError as exc:
+        store.mark_failed(ticket.id, str(exc))
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=TriageErrorResponse(message="Triage failed", trace_id=trace_id).model_dump(),
+        ) from exc
+
     updated_ticket = store.save_report(ticket.id, report)
-    tracer.record(updated_ticket, report)
     return TicketResponse.model_validate(updated_ticket)

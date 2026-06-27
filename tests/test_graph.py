@@ -1,10 +1,25 @@
+import pytest
+
 from app.agents.graph import SupportTriageGraph
+from app.core.config import get_settings
 from app.models.tickets import Ticket, TicketCategory, TicketCreate, TicketPriority
 from app.services.knowledge_base import SupportKnowledgeBase
-from app.services.llm import MockSupportChatModel
+from app.services.llm import MockSupportTriageModel
+from app.services.tracing import TriageTracer
 
 
-def test_graph_routes_high_risk_account_ticket_through_risk_review() -> None:
+@pytest.fixture
+def graph() -> SupportTriageGraph:
+    return SupportTriageGraph(
+        SupportKnowledgeBase(),
+        MockSupportTriageModel(),
+        tracer=TriageTracer(get_settings()),
+    )
+
+
+def test_graph_routes_high_risk_account_ticket_through_risk_review(
+    graph: SupportTriageGraph,
+) -> None:
     ticket = Ticket(
         **TicketCreate(
             customer_id="cust_123",
@@ -12,7 +27,6 @@ def test_graph_routes_high_risk_account_ticket_through_risk_review() -> None:
             description="I am locked out after MFA setup and payroll closes today.",
         ).model_dump()
     )
-    graph = SupportTriageGraph(SupportKnowledgeBase(), MockSupportChatModel())
 
     report = graph.run(ticket, trace_id="trace-test")
 
@@ -22,9 +36,10 @@ def test_graph_routes_high_risk_account_ticket_through_risk_review() -> None:
     assert report.escalate is True
     assert "risk_review" in report.workflow_path
     assert report.draft_response
+    assert "Security-sensitive" not in report.rationale
 
 
-def test_graph_keeps_general_question_low_priority() -> None:
+def test_graph_keeps_general_question_low_priority(graph: SupportTriageGraph) -> None:
     ticket = Ticket(
         **TicketCreate(
             customer_id="cust_456",
@@ -32,7 +47,6 @@ def test_graph_keeps_general_question_low_priority() -> None:
             description="How do I update email notification preferences for weekly reports?",
         ).model_dump()
     )
-    graph = SupportTriageGraph(SupportKnowledgeBase(), MockSupportChatModel())
 
     report = graph.run(ticket, trace_id="trace-test")
 
@@ -42,7 +56,7 @@ def test_graph_keeps_general_question_low_priority() -> None:
     assert "risk_review" not in report.workflow_path
 
 
-def test_security_terms_take_precedence_over_account_terms() -> None:
+def test_security_terms_take_precedence_over_account_terms(graph: SupportTriageGraph) -> None:
     ticket = Ticket(
         **TicketCreate(
             customer_id="cust_789",
@@ -50,10 +64,10 @@ def test_security_terms_take_precedence_over_account_terms() -> None:
             description="We suspect account compromise after a phishing email and unusual login.",
         ).model_dump()
     )
-    graph = SupportTriageGraph(SupportKnowledgeBase(), MockSupportChatModel())
 
     report = graph.run(ticket, trace_id="trace-test")
 
     assert report.category == TicketCategory.SECURITY
     assert report.priority == TicketPriority.CRITICAL
     assert report.escalate is True
+    assert "Security-sensitive" in report.rationale

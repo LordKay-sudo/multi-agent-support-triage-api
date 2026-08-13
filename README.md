@@ -3,6 +3,16 @@
 Production-style FastAPI service demonstrating multi-agent LLM orchestration with LangGraph,
 Pydantic contracts, LangChain prompt composition, optional AWS Bedrock support, and Langfuse tracing.
 
+[![CI](https://github.com/LordKay-sudo/multi-agent-support-triage-api/actions/workflows/ci.yml/badge.svg)](https://github.com/LordKay-sudo/multi-agent-support-triage-api/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Portfolio](https://img.shields.io/badge/portfolio-portfolio.lordkay.com-38bdf8)](https://portfolio.lordkay.com)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-3776ab?logo=python&logoColor=white)](pyproject.toml)
+[![FastAPI](https://img.shields.io/badge/FastAPI-API-009688?logo=fastapi&logoColor=white)](app/main.py)
+[![LangGraph](https://img.shields.io/badge/LangGraph-agents-1C3C3C)](pyproject.toml)
+[![Pydantic](https://img.shields.io/badge/Pydantic-v2-e92063?logo=pydantic&logoColor=white)](pyproject.toml)
+[![Langfuse](https://img.shields.io/badge/Langfuse-tracing-000000?logo=langfuse&logoColor=white)](pyproject.toml)
+[![AWS Bedrock](https://img.shields.io/badge/AWS_Bedrock-optional-FF9900?logo=amazonaws&logoColor=white)](pyproject.toml)
+
 The demo takes an incoming support ticket and routes it through a small agent workflow:
 
 1. Classifier agent identifies category and priority.
